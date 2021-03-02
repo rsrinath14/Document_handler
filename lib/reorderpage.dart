@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:drag_and_drop_gridview/devdrag.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:async';
 
 class ReorderPage extends StatefulWidget {
   @override
@@ -7,47 +9,76 @@ class ReorderPage extends StatefulWidget {
 }
 
 class _ReorderPageState extends State<ReorderPage> {
-  List<String> scannedPages = ["Red", "Green", "Blue", "Yellow", "Vilot"];
+  List<String> images = [
+    'assets/images/lake.jpg',
+    'assets/images/leaves.jpg',
+    'assets/images/space.jpg',
+    'assets/images/tropics.jpg',
+    'assets/images/leopard.jpg',
+    'assets/images/sunset.jpg',
+    'assets/images/wolf.jpg',
+  ];
+
+  int variableSet = 0;
+  ScrollController _scrollController;
+  double width;
+  double height;
 
   @override
-  void onReorder(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-    setState(() {
-      String temp = scannedPages[oldIndex];
-      scannedPages.removeAt(oldIndex);
-      scannedPages.insert(newIndex, temp);
-    });
-  }
-
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Reordering Pages'),
+          title: Text('Reorder Pages'),
         ),
-        body: ReorderableListView(
-          children: getListItems(),
-          onReorder: (int oldIndex, int newIndex) {
-            onReorder(oldIndex, newIndex);
+        body: DragAndDropGridView(
+          controller: _scrollController,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 3 / 4.5,
+          ),
+          padding: EdgeInsets.all(20),
+          itemBuilder: (context, index) => Card(
+            elevation: 2,
+            child: LayoutBuilder(builder: (context, costrains) {
+              if (variableSet == 0) {
+                height = costrains.maxHeight;
+                width = costrains.maxWidth;
+                variableSet++;
+              }
+              return GridTile(
+                child: Image.asset(
+                  images[index],
+                  height: height,
+                  width: width,
+                ),
+              );
+            }),
+          ),
+          itemCount: images.length,
+          onWillAccept: (oldIndex, newIndex) => true,
+          onReorder: (oldIndex, newIndex) {
+            int indexOfFirstItem = images.indexOf(images[oldIndex]);
+            int indexOfSecondItem = images.indexOf(images[newIndex]);
+
+            if (indexOfFirstItem > indexOfSecondItem) {
+              for (int i = images.indexOf(images[oldIndex]);
+                  i > images.indexOf(images[newIndex]);
+                  i--) {
+                var tmp = images[i - 1];
+                images[i - 1] = images[i];
+                images[i] = tmp;
+              }
+            } else {
+              for (int i = images.indexOf(images[oldIndex]);
+                  i < images.indexOf(images[newIndex]);
+                  i++) {
+                var tmp = images[i + 1];
+                images[i + 1] = images[i];
+                images[i] = tmp;
+              }
+            }
+            setState(() {});
           },
-          scrollDirection: Axis.vertical,
         ));
-  }
-
-  List<ListTile> getListItems() {
-    return scannedPages
-        .asMap()
-        .map((index, item) => MapEntry(index, buildListTile(item, index)))
-        .values
-        .toList();
-  }
-
-  ListTile buildListTile(String item, int index) {
-    return ListTile(
-      key: ValueKey(item),
-      title: Text(item),
-      leading: Text("#${index + 1}"),
-    );
   }
 }
